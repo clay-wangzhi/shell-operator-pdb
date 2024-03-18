@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shell-operator-pdb
+  namespace: monitor
+  labels:
+    app: shell-operator-pdb
+    appid: shell-operator-pdb
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: shell-operator-pdb
+    appid: shell-operator-pdb
+  name: shell-operator-pdb
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - argoproj.io
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - get
+  - create
+  - patch
+  - update
+  - delete
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: shell-operator-pdb
+  labels:
+    app: shell-operator-pdb
+    appid: shell-operator-pdb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: shell-operator-pdb
+subjects:
+- kind: ServiceAccount
+  name: shell-operator-pdb
+  namespace: monitor
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shell-operator-pdb
+  labels:
+    app: shell-operator-pdb
+    appid: shell-operator-pdb
+  namespace: monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shell-operator-pdb
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: shell-operator-pdb
+        appid: shell-operator-pdb
+    spec:
+      containers:
+      - image: wangzhichidocker/shell-operator-pdb:v1.0
+        imagePullPolicy: IfNotPresent
+        name: shell-operator-pdb
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: shell-operator-pdb
